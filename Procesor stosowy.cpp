@@ -19,7 +19,7 @@ class Stack
         }
 
     public:
-        Stack() {
+        void push_empty() {
             this->top = NULL;
         }
         void push(char c) {
@@ -35,17 +35,31 @@ class Stack
                 delete top;
                 return temp->c;
             }
-            cout << "stack empty" << endl;
+            printf("stack empty\n");
             return 0;
         }
         void print() {
             Node* node = top;
+			int i = 0;
             while (node != NULL)
             {
-                cout << node->c << endl;
+				printf("%d: %c\n",&i, node->c);
                 node = node->next;
+				i++;
             }
         }
+		void copy_top() {
+			char c = this->pop();
+			this->push(c);
+            this->push(c);
+		}
+		void swap() {
+			char c1 = this->pop();
+			char c2 = this->pop();
+			this->push(c1);
+			this->push(c2);
+		}
+
 
 };
 
@@ -54,10 +68,29 @@ class Stack
 int main()
 {
     Stack stos;
-    stos.push('a');
-    stos.push('b');
-    stos.push('c');
-    //stos.print();
+    char c, temp;
+	int breakpoint = 0;
+    while (breakpoint!=2) {
+        c = getchar();
+		if (c == '\n') breakpoint++;
+        else if (c=='\'') {
+			stos.push_empty();
+        }
+        else if (c == ',') {
+			temp = stos.pop();
+		}
+        else if (c == ':') {
+			stos.copy_top();
+        }
+        else if (c == ';') {
+			stos.swap();
+		}
+		else if (c == '@') {
+
+        }
+    }
+
+
 
     return 0;
 }
