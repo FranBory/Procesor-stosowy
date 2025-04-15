@@ -1,17 +1,8 @@
-﻿#include <iostream>
+﻿#include <stdio.h>
+#include <stdlib.h>
 
 using namespace std;
 
-typedef struct Instructions {
-	int id;
-	char c;
-	struct Instructions* next;
-} Instructions;
-
-typedef struct {
-	Instructions* head;  
-	Instructions* tail;  
-} InstrList;
 
 typedef struct ListNode {
 	char c;
@@ -36,29 +27,9 @@ bool isEmptyList(List* list) {
 	if (list->head == NULL) return true;
 	else return false;
 }
-bool isEmptyInstr(Instructions* instr) {
-	if (instr == NULL) return true;
-	else return false;
-}
-
-void push_instruction(InstrList* instr, char c,int* id) { 
-	Instructions* newInstr = new Instructions;
-	newInstr->c = c;
-	newInstr->id = *id;
-	if (c != '?') (*id)++;
-	newInstr->next = NULL;
-	if (instr->head != NULL) {
-		instr->tail->next = newInstr;
-		instr->tail = newInstr;
-	}
-	else {
-		instr->head = newInstr;
-		instr->tail = newInstr;
-	}
-}
 
 void push_numbs(List* numbs, char c, int id) {
-	ListNode* newNumb = new ListNode;
+	ListNode* newNumb = (ListNode*)malloc(sizeof(ListNode));
 	newNumb->c = c;
 	newNumb->next = NULL;
 	if (numbs->head != NULL) {
@@ -71,8 +42,8 @@ void push_numbs(List* numbs, char c, int id) {
 	}
 }
 void push_empty_list(Node** top) {       // apostrof włóż na stos pustą listę
-	Node* node = new Node;
-	List* list = new List;
+	Node* node = (Node*)malloc(sizeof(Node));
+	List* list = (List*)malloc(sizeof(List));
 	list->head = NULL;
 	list->tail = NULL;
 	node->list = list;
@@ -81,7 +52,7 @@ void push_empty_list(Node** top) {       // apostrof włóż na stos pustą list
 	*top = node;
 }
 void push_list(List* list,Node** top) {          //TODO fix
-	Node* node = new Node;
+	Node* node = (Node*)malloc(sizeof(Node));
 	node->list = list;
 	if (!isEmptyStack(*top)) node->next = *top;
 	else node->next = NULL;
@@ -93,7 +64,7 @@ void push_node(Node* node, Node** top) {     //TODO check if it works
 	*top = node;
 }
 void push_char(char c, List** list) {
-	ListNode* listNode = new ListNode;
+	ListNode* listNode = (ListNode*)malloc(sizeof(ListNode));
 	listNode->c = c;
 	if (!isEmptyList(*list)) {
 		listNode->next = (*list)->head;
@@ -110,7 +81,7 @@ List* pop_list(Node** top) {               // przecinek zdejmij listę ze stosu
 		Node* temp = *top;
 		*top = (*top)->next;
 		List* c = temp->list;
-		delete temp;
+		free(temp);
 		return c;
 	}
 	else {
@@ -131,7 +102,7 @@ Node* pop_node(Node** top) {
 }
 void copy_list(List** copied, List* to_copy, ListNode* node ) {
 	if (node == NULL) return;
-	ListNode* new_node = new ListNode;
+	ListNode* new_node = (ListNode*)malloc(sizeof(ListNode));
 	new_node->c = node->c;
 	new_node->next = NULL;
 	if ((*copied)->head == NULL) {
@@ -146,8 +117,8 @@ void copy_list(List** copied, List* to_copy, ListNode* node ) {
 }
 void copy_top(Node** top) {         // dwukropek skopiuj listę na szczycie stosu
 	if (!isEmptyStack(*top)) {
-		Node* node = new Node;
-		List* copied_list = new List;
+		Node* node = (Node*)malloc(sizeof(Node));
+		List* copied_list = (List*)malloc(sizeof(List));
 		copied_list->head = NULL;
 		copied_list->tail = NULL;
 		copy_list(&copied_list, (*top)->list, (*top)->list->head);
@@ -163,7 +134,8 @@ void swap_top2(Node** top) {   // średnik zamień 2 listy na szczycie stosu
 }
 long long list_to_int(List* list,ListNode* node, int level) {
 	long long result = 0;
-	result = (node->c - '0') * level;
+	if(node->c != '-') result = (node->c - '0') * level;
+	if (list->tail->c == '-') result *= -1;
 	if (node != list->tail) {
 		return list_to_int(list, node->next, level * 10) + result;
 	}
@@ -176,10 +148,10 @@ Node* get_by_index(Node* node, long long index) {
 void copyByIndex(Node** top) {
 	Node* popped = pop_node(top);
 	long long indx = list_to_int(popped->list, popped->list->head, 1);
-	delete popped;
+	free(popped);
 	Node* toCopy = get_by_index((*top), indx);
-	Node* node = new Node;
-	List* copied_list = new List;
+	Node* node = (Node*)malloc(sizeof(Node));
+	List* copied_list = (List*)malloc(sizeof(List));
 	copied_list->head = NULL;
 	copied_list->tail = NULL;
 	copy_list(&copied_list, toCopy->list, toCopy->list->head);
@@ -203,20 +175,21 @@ void printStack(Node* node, int i) {
 		printf("\n");
 	}
 }
-void readChar(Node** stos, List** numbs) {
-	push_char((*numbs)->head->c, &((*stos)->list));
-	(*numbs)->head = (*numbs)->head->next;
+void readChar(Node** stos) {
+	char c;
+	scanf_s("%c", &c, 1);
+	push_char(c, &((*stos)->list));
 }
 void printFirstChar(Node** node) {
 	Node* popped = pop_node(node);
 	printf("%c", popped->list->head->c);
-	delete popped;
+	free(popped);
 }
 void deleteTail(List** list, ListNode* node){
 	if (node == NULL) return;
 	if (node->next == (*list)->tail) {
 		node->next = NULL;
-		delete (*list)->tail;
+		free((*list)->tail);
 		(*list)->tail = node;
 	}
 	else deleteTail(list, node->next);
@@ -235,7 +208,7 @@ void absolute(List** list) {
 void pushMinus(List** list) {
 	if (!isEmptyList(*list)) {
 		if ((*list)->tail->c != '-') {
-			(*list)->tail->next = new ListNode;
+			(*list)->tail->next = (ListNode*)malloc(sizeof(ListNode));
 			(*list)->tail->next->c = '-';
 			(*list)->tail->next->next = NULL;
 			(*list)->tail = (*list)->tail->next;
@@ -247,7 +220,7 @@ void pushMinus(List** list) {
 void clearListNode(ListNode* node) {
 	if (node == NULL) return;
 	clearListNode(node->next);
-	delete node;
+	free(node);
 }
 void clearList(List** list) {
 	if (isEmptyList(*list)) return;
@@ -310,15 +283,29 @@ void connectTop2(Node** stos) {
 	Node* popped = pop_node(stos);
 	(*stos)->list->tail->next = popped->list->head;
 	(*stos)->list->tail = popped->list->tail;
-	delete popped;
+	free(popped);
 }
+
+void compereListNodes(ListNode* a, ListNode* b, bool* isEqual ) {
+	if (a == NULL && b == NULL) return;
+	if ((a == NULL && b!=NULL) || (b == NULL && a != NULL)) {
+		*isEqual = false;
+		return;
+	}
+	if (a->c != b->c) {
+		*isEqual = false;
+		return;
+	}
+	compereListNodes(a->next, b->next, isEqual);
+}
+
 void comperTop2(Node** stos) {
 	Node* a = pop_node(stos);
 	Node* b = pop_node(stos);
 	long long iA = list_to_int(a->list, a->list->head, 1);
 	long long iB = list_to_int(b->list, b->list->head, 1);
-	delete a;
-	delete b;
+	free(a);
+	free(b);
 	push_empty_list(stos);
 	if (iB < iA) push_char('1', &((*stos)->list));
 	else push_char('0', &((*stos)->list));
@@ -326,12 +313,12 @@ void comperTop2(Node** stos) {
 void isEqualTop2(Node** stos) {
 	Node* a = pop_node(stos);
 	Node* b = pop_node(stos);
-	delete a;
-	delete b;
-	long long iA = list_to_int(a->list, a->list->head, 1);
-	long long iB = list_to_int(b->list, b->list->head, 1);
+	bool isEqual = true;
+	compereListNodes(a->list->head, b->list->head, &isEqual);
+	free(a);
+	free(b);
 	push_empty_list(stos);
-	if (iB == iA) push_char('1', &((*stos)->list));
+	if (isEqual) push_char('1', &((*stos)->list));
 	else push_char('0', &((*stos)->list));
 }
 void pushId(Node** stos,int id) {
@@ -343,113 +330,103 @@ void neagtion(Node** stos) {
 	else if ((*stos)->list->head == (*stos)->list->tail && (*stos)->list->head->c == '0') (*stos)->list->head->c = '1';
 	else {
 		Node * poped = pop_node(stos);
-		delete poped;
+		free(poped);
 		push_empty_list(stos);
 		push_char('0', &((*stos)->list));
 	}
 }
-Instructions* iterToID(Instructions* instr,int id) {
-	if (instr->id == id) return instr;
-	else if (instr->next == NULL) return NULL;
-	else return iterToID(instr->next, id);
-}
-void jumpToInstr(Instructions** instr,Node** stos) {
+
+void jumpToInstr(int* id,Node** stos) {
 	Node* t = pop_node(stos);
 	Node* w = pop_node(stos);
 	if (!isEmptyList(w->list) && (w->list->head != w->list->tail && w->list->head->c =='0')) {
 		int i = list_to_int(t->list, t->list->head, 1);	
-		(*instr)->next = iterToID(*instr, i);
+		*id = i - 1;
 	}
-	delete t;
-	delete w;
-}
-
-void doAllInstructions(InstrList* list, Instructions* instr,Node** stos, List* numbs) {
-	switch (instr->c) {
-	case '\'': 
-		push_empty_list(stos);
-		break;
-	case ',': 
-		pop_list(stos);
-		break;
-	case '.':
-		readChar(stos, &numbs);
-		break;
-	case ':': 
-		copy_top(stos);
-		break;
-	case ';': 
-		swap_top2(stos);
-		break;
-	case '@': 
-		copyByIndex(stos);
-		break;
-	case '&': 
-		printStack(*stos, 0);
-		break;
-	case '=': 
-		comperTop2(stos);
-		break;
-	case '<':
-		comperTop2(stos);
-		break;
-	case '>':
-		printFirstChar(stos);
-		break;
-	case '[': 
-		pushHeadASCII(stos);
-		break;
-	case ']':
-		pushAsASCII(stos);
-		break;
-	case '$':
-		pushHead(stos);
-		break;
-	case '#':
-		connectTop2(stos);
-		break;
-	case '~':
-		pushId(stos, instr->id);
-		break;
-	case '-':
-		pushMinus(&((*stos)->list));
-		break;
-	case '^':
-		absolute(&((*stos)->list));
-		break;
-	case '!':
-		neagtion(stos);
-		break;
-	case '?':
-		jumpToInstr(&instr,stos);
-		break;
-	default:
-		push_char(instr->c, &((*stos)->list));
-		break;
-	}
-	if (instr == list->tail) return;
-	doAllInstructions(list,instr->next, stos, numbs);
+	free(t);
+	free(w);
 }
 
 int main()
 {
-	InstrList instrList;
-	instrList.head = NULL;
-	instrList.tail = NULL;
-	List numbsList;
-	numbsList.head = NULL;
-	numbsList.tail = NULL;
+	char instr[20001];
+
 	Node* stos = NULL;
-	char c;
 	int breakpoint = 0, id = 0;
-	while (breakpoint != 2) {
-		c = getchar();
-		if (c == '\n') breakpoint++;
-		else if (breakpoint == 0) {
-			push_instruction(&instrList, c, &id);
+	fgets(instr, 20002, stdin);
+
+	while (breakpoint != 1) {
+		char c = instr[id];
+		switch (instr[id]) {
+		case '\n':
+			breakpoint++;
+			break;
+		case '\'':
+			push_empty_list(&stos);
+			break;
+		case ',':
+			pop_list(&stos);
+			break;
+		case '.':
+			char temp;
+			scanf_s("%c", &temp,1);
+			push_char(temp, &(stos->list));
+			break;
+		case ':':
+			copy_top(&stos);
+			break;
+		case ';':
+			swap_top2(&stos);
+			break;
+		case '@':
+			copyByIndex(&stos);
+			break;
+		case '&':
+			printStack(stos, 0);
+			break;
+		case '=':
+			isEqualTop2(&stos);
+			break;
+		case '<':
+			comperTop2(&stos);
+			break;
+		case '>':
+			printFirstChar(&stos);
+			break;
+		case '[':
+			pushHeadASCII(&stos);
+			break;
+		case ']':
+			pushAsASCII(&stos);
+			break;
+		case '$':
+			pushHead(&stos);
+			break;
+		case '#':
+			connectTop2(&stos);
+			break;
+		case '~':
+			pushId(&stos,id);
+			break;
+		case '-':
+			pushMinus(&(stos->list));
+			break;
+		case '^':
+			absolute(&(stos->list));
+			break;
+		case '!':
+			neagtion(&stos);
+			break;
+		case '?':
+			jumpToInstr(&id, &stos);
+			break;
+		default:
+			push_char(c, &(stos->list));
+			break;
 		}
-		else push_numbs(&numbsList, c, 0);
+		id++;
 	}
-	doAllInstructions(&instrList,instrList.head, &stos, &numbsList);
+	
+
 	return 0;
 }
