@@ -267,39 +267,32 @@ void connectTop2(Node** stos) {
 	free(popped);
 }
 
-void compereListNodes(ListNode* a, ListNode* b, bool* isEqual) {
-	if (a == NULL && b == NULL) return;
-	if ((a == NULL && b != NULL) || (b == NULL && a != NULL)) {
-		*isEqual = false;
-		return;
-	}
-	if (a->c != b->c) {
-		*isEqual = false;
-		return;
-	}
-	compereListNodes(a->next, b->next, isEqual);
-}
 bool compare2negative(ListNode* a, ListNode* b) {
-	if (a == NULL && b == NULL) return true;
-	if (a == NULL || b == NULL) return false;
-	if (a->c != b->c) return false;
-	return compare2negative(a->next, b->next);
+	if (a->c < b->c) return true;
+	else if (a->c > b->c) return false;
+	else {
+		if (a->prev == NULL && b->prev == NULL) return true;
+		else if (a->prev != NULL && b->prev == NULL) return false;
+		else if (a->prev == NULL && b->prev != NULL) return true;
+		else return compare2negative(a->prev, b->prev); 
+	}
 }
 bool compare2positive(ListNode* a, ListNode* b) {
-	if (a == NULL && b == NULL) return true;
-	if (a == NULL || b == NULL) return false;
-	if (a->c != b->c) return false;
-	return compare2positive(a->next, b->next);
-}
-
-void comperTop2(Node** stos) {								//fix this
-	Node* a = pop_node(stos);
-	Node* b = pop_node(stos);
-	if (a->list->tail )
-	{
-
+	if (a->c > b->c) return true;
+	else if (a->c < b->c) return false;
+	else {
+		if (a->prev == NULL && b->prev == NULL) return true;
+		else if (a->prev != NULL && b->prev == NULL) return true;
+		else if (a->prev == NULL && b->prev != NULL) return false;
+		else return compare2positive(a->prev, b->prev);
 	}
 }
+bool isPositive(List* node) {
+	if (node->tail->c == '-') return false;
+	else return true;
+}
+
+
 void listIsZeros(ListNode* node, bool* isZero) {
 	if (node == NULL || node->c == '-') return;
 	if (node->c != '0') {
@@ -320,16 +313,12 @@ bool equal_values(ListNode* a_msb,ListNode* b_msb){
 	if (a_msb->c != b_msb->c)          return false;           
 	return equal_values(a_msb->prev, b_msb->prev);
 }
-
-void isEqualTop2(Node** stos) {
-	Node* a = pop_node(stos);
-	Node* b = pop_node(stos);
+bool isEqual(Node* a, Node* b) {
 	bool isZeroA = true;
 	bool isZeroB = true;
 	listIsZeros(b->list->head, &isZeroB);
 	listIsZeros(a->list->head, &isZeroA);
-	push_empty_list(stos);
-	if (isZeroA && isZeroB) push_char('1', &((*stos)->list));
+	if (isZeroA && isZeroB) return true;
 	else {
 		ListNode* a_msb = NULL;
 		ListNode* b_msb = NULL;
@@ -341,11 +330,43 @@ void isEqualTop2(Node** stos) {
 			a_msb = skip_leading_zeros(a->list->tail);
 			b_msb = skip_leading_zeros(b->list->tail);
 		}
-		if (equal_values(a_msb, b_msb)) push_char('1', &((*stos)->list));
-		else push_char('0', &((*stos)->list));
+		if (equal_values(a_msb, b_msb)) return true;
+		else return false;
 		free(a_msb);
 		free(b_msb);
 	}
+}
+bool isAgreater(Node* a, Node* b) {
+	if (isEqual(a,b)) return false;
+	if (isPositive(a->list) && !isPositive(b->list)) return true;
+	else if (!isPositive(a->list) && isPositive(b->list)) return false;
+	else if (isPositive(a->list) && isPositive(b->list)) {
+		ListNode* a_msb = skip_leading_zeros(a->list->tail);
+		ListNode* b_msb = skip_leading_zeros(b->list->tail);
+		return compare2positive(a_msb, b_msb);
+	}
+	else if (!isPositive(a->list) && !isPositive(b->list))
+	{
+		ListNode* a_msb = skip_leading_zeros(a->list->tail->prev);
+		ListNode* b_msb = skip_leading_zeros(b->list->tail->prev); 
+		return compare2negative(a_msb, b_msb);
+	}
+}
+void comperTop2(Node** stos) {
+	Node* a = pop_node(stos);
+	Node* b = pop_node(stos);
+	push_empty_list(stos);
+	if (isAgreater(a, b)) push_char('1', &((*stos)->list));
+	else push_char('0', &((*stos)->list));
+	free(a);
+	free(b);
+}
+void isEqualTop2(Node** stos) {
+	Node* a = pop_node(stos);
+	Node* b = pop_node(stos);
+	push_empty_list(stos);
+	if (isEqual(a,b)) push_char('1', &((*stos)->list));
+	else push_char('0', &((*stos)->list));
 	free(a);
 	free(b);
 }
@@ -367,12 +388,59 @@ void neagtion(Node** stos) {
 void jumpToInstr(int* id, Node** stos) {
 	Node* t = pop_node(stos);
 	Node* w = pop_node(stos);
-	if (!isEmptyList(w->list) && (w->list->head != w->list->tail && w->list->head->c == '0')) {
-		int i = list_to_int(t->list, t->list->head, 1);
-		*id = i - 1;
+	bool s = true;
+	listIsZeros(w->list->head, &s);
+	if (!s && !isEmptyList(w->list)) {
+		*id = list_to_int(t->list, t->list->head, 1);
+		*id = *id - 1;
 	}
 	free(t);
 	free(w);
+}
+void addPositive(ListNode* a, ListNode* b, List** result, int carry, bool aLast, bool bLast) {
+	int a_value = a->c - '0';
+	int b_value = b->c - '0';
+	if (aLast) a_value = 0;
+	if (bLast) b_value = 0;
+	int sum = a_value + b_value + carry;
+	if (sum >= 10) carry = 1;
+	else carry = 0;
+	char c = sum % 10 + '0';
+	push_char(c, result);
+	if (a->next != NULL && b->next != NULL) {
+		addPositive(a->next, b->next, result, carry,false,false);
+	}
+	else if (a->next != NULL && b->next == NULL) {
+		addPositive(a->next, b, result, carry, false, true);
+	}
+	else if (a->next == NULL && b->next != NULL) {
+		addPositive(a, b->next, result, carry, true, false);
+	}
+	else if (carry == 1) push_char('1', result);
+}
+
+void addTop2(Node** stos) {
+	//a + b
+	Node* a = pop_node(stos);
+	Node* b = pop_node(stos);
+	absolute(&(a->list));
+	absolute(&(b->list));
+	push_empty_list(stos);
+	if (isEqual(a, b)) push_char('0', &((*stos)->list));
+	else if (isAgreater(a, b) && isPositive(b->list)) {
+		addPositive(a->list->head , b->list->head , &((*stos)->list), 0,false,false);
+	}
+	free(a);
+	free(b);
+}
+
+void freeStack(Node** top) {
+	if (isEmptyStack(*top)) return;
+	else {
+		freeStack(&((*top)->next));
+		clearList(&((*top)->list));
+		free(*top);
+	}
 }
 
 int main()
@@ -381,7 +449,7 @@ int main()
 
 	Node* stos = NULL;
 	int breakpoint = 0, id = 0;
-	fgets(instr, 20002, stdin);
+	fgets(instr, 20001, stdin);
 
 	while (breakpoint != 1) {
 		char c = instr[id];
@@ -448,13 +516,17 @@ int main()
 		case '?':
 			jumpToInstr(&id, &stos);
 			break;
+		case '+':
+			addTop2(&stos);
+			break;
 		default:
 			push_char(c, &(stos->list));
 			break;
 		}
 		id++;
+		//printf("%d\n", id);
 	}
-
+	freeStack(&stos);
 
 	return 0;
 }
