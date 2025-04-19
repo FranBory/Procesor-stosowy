@@ -30,7 +30,7 @@ bool isEmptyList(List* list) {
 }
 
 
-void push_empty_list(Node** top) {       // apostrof włóż na stos pustą listę
+void push_empty_list(Node** top) {       
 	Node* node = (Node*)malloc(sizeof(Node));
 	List* list = (List*)malloc(sizeof(List));
 	list->head = NULL;
@@ -46,6 +46,7 @@ void push_node(Node* node, Node** top) {
 	node->next = *top;
 	*top = node;
 }
+//',','1'50?
 void push_char(char c, List** list) {
 	ListNode* listNode = (ListNode*)malloc(sizeof(ListNode));
 	listNode->c = c;
@@ -61,7 +62,7 @@ void push_char(char c, List** list) {
 		listNode->next = NULL;
 	}
 }
-List* pop_list(Node** top) {               // przecinek zdejmij listę ze stosu
+List* pop_list(Node** top) {
 	if (!isEmptyStack(*top)) {
 		Node* temp = *top;
 		*top = (*top)->next;
@@ -90,17 +91,19 @@ void copy_list(List** copied, List* to_copy, ListNode* node) {
 	ListNode* new_node = (ListNode*)malloc(sizeof(ListNode));
 	new_node->c = node->c;
 	new_node->next = NULL;
+	new_node->prev = NULL;
 	if ((*copied)->head == NULL) {
 		(*copied)->head = new_node;
 		(*copied)->tail = new_node;
 	}
 	else {
+		new_node->prev = (*copied)->tail;
 		(*copied)->tail->next = new_node;
 		(*copied)->tail = new_node;
 	}
 	copy_list(copied, to_copy, node->next);
 }
-void copy_top(Node** top) {         // dwukropek skopiuj listę na szczycie stosu
+void copy_top(Node** top) {
 	if (!isEmptyStack(*top)) {
 		Node* node = (Node*)malloc(sizeof(Node));
 		List* copied_list = (List*)malloc(sizeof(List));
@@ -112,7 +115,7 @@ void copy_top(Node** top) {         // dwukropek skopiuj listę na szczycie stos
 	}
 	else printf("stack empty\n");
 }
-void swap_top2(Node** top) {   // średnik zamień 2 listy na szczycie stosu
+void swap_top2(Node** top) {
 	List* old_top = (*top)->list;
 	(*top)->list = (*top)->next->list;
 	(*top)->next->list = old_top;
@@ -184,15 +187,25 @@ void absolute(List** list) {
 	}
 	else return;
 }
+void pushCharToTail(char c, List** list) {
+	ListNode* listNode = (ListNode*)malloc(sizeof(ListNode));
+	listNode->c = c;
+	listNode->next = NULL;
+	if (!isEmptyList(*list)) {
+		listNode->prev = (*list)->tail;
+		(*list)->tail->next = listNode;
+		(*list)->tail = listNode;
+	}
+	else {
+		(*list)->head = listNode;
+		(*list)->tail = listNode;
+		listNode->prev = NULL;
+	}
+}
 void pushMinus(List** list) {
 	if (!isEmptyList(*list)) {
 		if ((*list)->tail->c != '-') {
-			ListNode* old = (*list)->tail;
-			(*list)->tail->next = (ListNode*)malloc(sizeof(ListNode));
-			(*list)->tail->next->c = '-';
-			(*list)->tail->next->next = NULL;
-			(*list)->tail = (*list)->tail->next;
-			(*list)->tail->prev = old;
+			pushCharToTail('-', list);
 		}
 		else absolute(list);
 	}
@@ -216,26 +229,10 @@ void pushAsASCII(Node** stos) {
 	char c = (char)i;
 	push_char(c, &((*stos)->list));
 }
-
-void pushInt(Node** stos, int i) {
-	if (i < 10) {
-		push_char(i + '0', &((*stos)->list));
-	}
-	else if (i < 100) {
-		int j = i % 10;
-		i = i / 10;
-		push_char(i + '0', &((*stos)->list));
-		push_char(j + '0', &((*stos)->list));
-	}
-	else {
-		int j = i % 10;
-		i = i / 10;
-		int k = i % 10;
-		i = i / 10;
-		push_char(i + '0', &((*stos)->list));
-		push_char(k + '0', &((*stos)->list));
-		push_char(j + '0', &((*stos)->list));
-	}
+void pushInt(Node** stos, int n) {
+	if (n >= 10) pushInt(stos, n / 10);
+	char c = (char)('0' + (n % 10));
+	push_char(c,&((*stos)->list));
 }
 
 void pushHeadASCII(Node** stos) {
@@ -267,31 +264,10 @@ void connectTop2(Node** stos) {
 	free(popped);
 }
 
-bool compare2negative(ListNode* a, ListNode* b) {
-	if (a->c < b->c) return true;
-	else if (a->c > b->c) return false;
-	else {
-		if (a->prev == NULL && b->prev == NULL) return true;
-		else if (a->prev != NULL && b->prev == NULL) return false;
-		else if (a->prev == NULL && b->prev != NULL) return true;
-		else return compare2negative(a->prev, b->prev); 
-	}
-}
-bool compare2positive(ListNode* a, ListNode* b) {
-	if (a->c > b->c) return true;
-	else if (a->c < b->c) return false;
-	else {
-		if (a->prev == NULL && b->prev == NULL) return true;
-		else if (a->prev != NULL && b->prev == NULL) return true;
-		else if (a->prev == NULL && b->prev != NULL) return false;
-		else return compare2positive(a->prev, b->prev);
-	}
-}
 bool isPositive(List* node) {
 	if (node->tail->c == '-') return false;
 	else return true;
 }
-
 
 void listIsZeros(ListNode* node, bool* isZero) {
 	if (node == NULL || node->c == '-') return;
@@ -300,6 +276,19 @@ void listIsZeros(ListNode* node, bool* isZero) {
 		return;
 	}
 	listIsZeros(node->next, isZero);
+}
+
+void trim_tail_zeros(List* list)
+{
+	if (list == NULL || list->tail == NULL) return;
+	if (list->tail == list->head) return;
+	if (list->tail->c != '0') return;
+
+	ListNode* tmp = list->tail;
+	list->tail = tmp->prev;
+	list->tail->next = NULL;
+	free(tmp);
+	trim_tail_zeros(list);
 }
 
 ListNode* skip_leading_zeros(ListNode* p){
@@ -319,38 +308,71 @@ bool isEqual(Node* a, Node* b) {
 	listIsZeros(b->list->head, &isZeroB);
 	listIsZeros(a->list->head, &isZeroA);
 	if (isZeroA && isZeroB) return true;
+	else if ((isZeroA && !isZeroB) || (!isZeroA && isZeroB)) return false;
+	else if (isEmptyList(a->list) && isEmptyList(b->list)) return true;
+	else if (isEmptyList(a->list) && !isEmptyList(b->list)) return false;
+	else if (!isEmptyList(a->list) && isEmptyList(b->list)) return false;
 	else {
 		ListNode* a_msb = NULL;
 		ListNode* b_msb = NULL;
-		if (a->list->tail->c == '-' && b->list->tail->c == '-') {
+		if (a->list->tail->c == '-') {
 			a_msb = skip_leading_zeros(a->list->tail->prev);
+			a_msb->next = (ListNode*)malloc(sizeof(ListNode));
+			a_msb->next->c = '-';
+			a_msb->next->prev = a_msb;
+			a_msb->next->next = NULL;
+			a_msb = a_msb->next;
+		}
+		else a_msb = skip_leading_zeros(a->list->tail);
+		if(b->list->tail->c == '-') {
 			b_msb = skip_leading_zeros(b->list->tail->prev);
+			b_msb->next = (ListNode*)malloc(sizeof(ListNode));
+			b_msb->next->c = '-';
+			b_msb->next->prev = b_msb;
+			b_msb->next->next = NULL;
+			b_msb = b_msb->next;
 		}
-		else {
-			a_msb = skip_leading_zeros(a->list->tail);
-			b_msb = skip_leading_zeros(b->list->tail);
-		}
+		else b_msb = skip_leading_zeros(b->list->tail);
 		if (equal_values(a_msb, b_msb)) return true;
 		else return false;
 		free(a_msb);
 		free(b_msb);
 	}
 }
+
+bool compare2positive(ListNode* a, ListNode* b,bool flagR,bool flagIF) {
+	if (flagIF && a->c > b->c) {
+		flagR = true;
+		flagIF = false;
+	}
+	else if (flagIF && a->c < b->c) {
+		flagR = false;
+		flagIF = false;
+	}
+	if (a->prev == NULL && b->prev == NULL) return flagR;
+	else if (a->prev != NULL && b->prev == NULL) return true;
+	else if (a->prev == NULL && b->prev != NULL) return false;
+	else return compare2positive(a->prev, b->prev,flagR,flagIF);
+	
+}
 bool isAgreater(Node* a, Node* b) {
 	if (isEqual(a,b)) return false;
 	if (isPositive(a->list) && !isPositive(b->list)) return true;
 	else if (!isPositive(a->list) && isPositive(b->list)) return false;
 	else if (isPositive(a->list) && isPositive(b->list)) {
-		ListNode* a_msb = skip_leading_zeros(a->list->tail);
-		ListNode* b_msb = skip_leading_zeros(b->list->tail);
-		return compare2positive(a_msb, b_msb);
+		trim_tail_zeros(a->list);
+		trim_tail_zeros(b->list);
+		return compare2positive(a->list->tail, b->list->tail,false,true);
 	}
 	else if (!isPositive(a->list) && !isPositive(b->list))
 	{
-		ListNode* a_msb = skip_leading_zeros(a->list->tail->prev);
-		ListNode* b_msb = skip_leading_zeros(b->list->tail->prev); 
-		return compare2negative(a_msb, b_msb);
+		absolute(&(a->list));
+		absolute(&(b->list));
+		trim_tail_zeros(a->list);
+		trim_tail_zeros(b->list);
+		return !compare2positive(a->list->tail, b->list->tail,false,true);
 	}
+	else return false;
 }
 void comperTop2(Node** stos) {
 	Node* a = pop_node(stos);
@@ -397,6 +419,7 @@ void jumpToInstr(int* id, Node** stos) {
 	free(t);
 	free(w);
 }
+
 void addPositive(ListNode* a, ListNode* b, List** result, int carry, bool aLast, bool bLast) {
 	int a_value = a->c - '0';
 	int b_value = b->c - '0';
@@ -406,7 +429,7 @@ void addPositive(ListNode* a, ListNode* b, List** result, int carry, bool aLast,
 	if (sum >= 10) carry = 1;
 	else carry = 0;
 	char c = sum % 10 + '0';
-	push_char(c, result);
+	pushCharToTail(c, result);
 	if (a->next != NULL && b->next != NULL) {
 		addPositive(a->next, b->next, result, carry,false,false);
 	}
@@ -416,20 +439,78 @@ void addPositive(ListNode* a, ListNode* b, List** result, int carry, bool aLast,
 	else if (a->next == NULL && b->next != NULL) {
 		addPositive(a, b->next, result, carry, true, false);
 	}
-	else if (carry == 1) push_char('1', result);
+	else if (carry == 1) pushCharToTail('1', result);
 }
-
+void subtract(ListNode* a, ListNode* b, List** result, int carry, bool bLast) {
+	int a_value = a->c - '0';
+	int b_value = b->c - '0';
+	if (bLast) b_value = 0;
+	int sub = a_value - b_value -carry;
+	if (sub < 0) {
+		sub += 10;
+		carry = 1;
+	}
+	else carry = 0;
+	char c = sub + '0';
+	pushCharToTail(c, result);
+	if (a->next != NULL && b->next != NULL) {
+		subtract(a->next, b->next, result, carry, false);
+	}
+	else if (a->next != NULL && b->next == NULL) {
+		subtract(a->next, b, result, carry, true);
+	}
+	else if (a->next == NULL && b->next != NULL) {
+		subtract(a, b->next, result, carry, false);
+	}
+	else if (carry == 1) {
+		pushCharToTail('1', result);
+	}
+}
 void addTop2(Node** stos) {
-	//a + b
 	Node* a = pop_node(stos);
 	Node* b = pop_node(stos);
-	absolute(&(a->list));
-	absolute(&(b->list));
 	push_empty_list(stos);
-	if (isEqual(a, b)) push_char('0', &((*stos)->list));
-	else if (isAgreater(a, b) && isPositive(b->list)) {
-		addPositive(a->list->head , b->list->head , &((*stos)->list), 0,false,false);
+	if (isPositive(a->list) && isPositive(b->list)) {
+		addPositive(a->list->head, b->list->head, &((*stos)->list), 0, false, false);
 	}
+	else if (!isPositive(a->list) && !isPositive(b->list)) {
+		absolute(&(a->list));
+		absolute(&(b->list));
+		if (isEqual(a, b)) push_char('0', &((*stos)->list));
+		addPositive(b->list->head, a->list->head, &((*stos)->list), 0, false, false);
+		pushMinus(&((*stos)->list));
+	}
+	else if (!isPositive(a->list) && isPositive(b->list)) {
+		absolute(&(a->list));
+		if (isEqual(a, b)) push_char('0', &((*stos)->list));
+		else if (isAgreater(a,b)) {
+			subtract(a->list->head, b->list->head, &((*stos)->list), 0, false);
+			trim_tail_zeros((*stos)->list);
+			bool s = true;	
+			listIsZeros((*stos)->list->head, &s);
+			if(!s) pushMinus(&((*stos)->list));
+		}
+		else {
+			subtract(b->list->head, a->list->head, &((*stos)->list), 0, false);
+			trim_tail_zeros((*stos)->list);
+		}
+	}
+	else if (isPositive(a->list) && !isPositive(b->list)) {
+		absolute(&(b->list));
+		if (isEqual(a, b)) push_char('0', &((*stos)->list));
+		else if (isAgreater(a, b)) { 
+			subtract(a->list->head, b->list->head, &((*stos)->list), 0, false);
+			trim_tail_zeros((*stos)->list);
+		}
+		else {
+			subtract(b->list->head, a->list->head, &((*stos)->list), 0, false);
+			trim_tail_zeros((*stos)->list);
+			bool s = true;
+			listIsZeros((*stos)->list->head, &s);
+			if (!s) pushMinus(&((*stos)->list));
+		}
+	}
+	else push_char('0', &((*stos)->list));
 	free(a);
 	free(b);
 }
@@ -443,10 +524,8 @@ void freeStack(Node** top) {
 	}
 }
 
-int main()
-{
+int main() {
 	char instr[20001];
-
 	Node* stos = NULL;
 	int breakpoint = 0, id = 0;
 	fgets(instr, 20001, stdin);
@@ -524,8 +603,8 @@ int main()
 			break;
 		}
 		id++;
-		//printf("%d\n", id);
 	}
+
 	freeStack(&stos);
 
 	return 0;
